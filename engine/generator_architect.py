@@ -1,80 +1,124 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import List, Dict, Optional
-from loguru import logger
+import re
+import yaml
+import json
+import logging
+from pathlib import Path
+from typing import Dict, List, Any, Optional
 
-# ==========================================
-# 逻辑锁基类：世界观与战力天花板强制校验
-# ==========================================
-class PowerSystemRule(BaseModel):
-    tier_name: str = Field(..., description="境界/战力等级名称，例如：结丹期 / 赛博精神病一阶")
-    power_limit: str = Field(..., description="该境界的破坏力上限描述，严禁越级。例如：最大摧毁一栋房屋")
-    taboo: str = Field(..., description="该境界的绝对禁忌或代价，例如：使用过度会导致记忆丧失")
+logger = logging.getLogger("Engine-PromptArchitect")
 
-class WorldConstraints(BaseModel):
+class PromptArchitect:
     """
-    黑盒生成的世界观底层逻辑锁，整个百万字生成周期内绝对不可篡改。
+    提示词架构师：负责将静态设定、角色协议、动态状态和历史记忆编译成最终的 LLM 指令。
     """
-    world_name: str = Field(..., description="世界名称")
-    core_conflict: str = Field(..., description="贯穿百万字的核心矛盾")
-    power_levels: List[PowerSystemRule] = Field(..., min_length=3, description="战力体系设定，必须严格按递进排序")
-    banned_tropes: List[str] = Field(
-        default=["战力崩坏", "机械降神", "主角突然降智", "无代价复活"],
-        description="黑名单：绝对不允许在小说中出现的烂俗桥段"
-    )
-
-# ==========================================
-# 章节级逻辑锁：防止剧情水化与 OOC
-# ==========================================
-class ChapterOutlineLock(BaseModel):
-    """
-    每一章生成正文前，必须先由推理模型(R1)产出并校验此结构。
-    """
-    chapter_number: int
-    chapter_title: str
-    pov_character: str = Field(..., description="本章主要视角人物")
-    plot_advancement: str = Field(..., description="本章对主线剧情的实质性推进（不能少于50字）")
-    character_arc_shift: Optional[str] = Field(None, description="人物心理/性格的微小转变")
-    
-    # 状态机硬校验字段
-    violates_world_rules: bool = Field(..., description="AI自我反思：本章大纲是否违反了 WorldConstraints 中的战力或禁忌？")
-    ooc_risk_assessment: float = Field(..., ge=0.0, le=1.0, description="OOC风险评估(0-1)。大于0.3将触发重新生成")
-
-    @field_validator("violates_world_rules")
-    def strict_rule_check(cls, v):
-        if v is True:
-            logger.error("逻辑锁触发：模型自我检测到违背世界观设定，强制抛出异常以触发 Tenacity 重试！")
-            raise ValueError("Draft violates core world rules. Must regenerate.")
-        return v
-
-    @field_validator("ooc_risk_assessment")
-    def ooc_threshold_check(cls, v):
-        if v > 0.3:
-            logger.error(f"逻辑锁触发：OOC风险过高 ({v})，强制抛出异常以触发 Tenacity 重试！")
-            raise ValueError(f"OOC risk ({v}) exceeds threshold of 0.3. Regenerate outline.")
-        return v
-
-# ==========================================
-# 架构师类：对外暴露的调用入口
-# ==========================================
-class GeneratorArchitect:
-    def __init__(self, router_client):
-        """
-        :param router_client: 上一步编写的 DeepSeekRouter 实例
-        """
-        self.client = router_client
-
-    async def build_world_base(self, super_prompt: str) -> WorldConstraints:
-        """
-        根据超级提示词，生成并锁死世界观 JSON。
-        底层调用了 robust_caller 中的 generate_structured_data，若返回不符合 WorldConstraints，将自动重试。
-        """
-        system_prompt = "你是一个严谨的世界观架构师。你的任务是根据用户的灵感，构建一个逻辑严密的设定。你必须严格思考战力平衡与规则代价。"
+    def __init__(
+        self, 
+        super_prompt_path: str = "prompts/super_prompt.md", 
+        system_prompts_path: str = "config/prompts_template/system_prompts.yaml"
+    ):
+        self.super_prompt_raw = self._load_text(super_prompt_path)
+        self.agent_templates = self._load_yaml(system_prompts_path)
         
-        # 将 Pydantic 模型作为目标强校验格式传入
-        world_data = await self.client.generate_structured_data(
-            system_prompt=system_prompt,
-            user_prompt=super_prompt,
-            response_model=WorldConstraints,
-            temperature=0.3 # 极低温度，保证逻辑锁不变形
-        )
-        return world_data
+        # 预编译核心区块
+        self.global_constants = self._extract_section("GLOBAL_CONSTANTS")
+        self.system_protocol = self._extract_section("SYSTEM_PROTOCOL")
+        self.encyclopedia = self._parse_encyclopedia()
+
+    def _load_text(self, path: str) -> str:
+        p = Path(path)
+        if not p.exists():
+            logger.error(f"❌ 关键文件缺失: {path}")
+            raise FileNotFoundError(path)
+        return p.read_text(encoding="utf-8")
+
+    def _load_yaml(self, path: str) -> Dict:
+        p = Path(path)
+        actual_path = p if p.exists() else Path(f"{path}.example") # 兼容 example
+        with open(actual_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+
+    def _extract_section(self, section_name: str) -> str:
+        """正则提取 [SECTION: NAME] 区块"""
+        pattern = rf"# \[SECTION: {section_name}\](.*?)(?=# \[SECTION:|$)"
+        match = re.search(pattern, self.super_prompt_raw, re.DOTALL)
+        return match.group(1).strip() if match else ""
+
+    def _parse_encyclopedia(self) -> Dict[str, str]:
+        """解析百科全书条目 [ENTRY: KEY]"""
+        encyclopedia_text = self._extract_section("ENCYCLOPEDIA")
+        entries = {}
+        pattern = r"## \[ENTRY: (.*?)\](.*?)(?=## \[ENTRY:|$)"
+        matches = re.finditer(pattern, encyclopedia_text, re.DOTALL)
+        for match in matches:
+            entries[match.group(1).strip()] = match.group(2).strip()
+        return entries
+
+    def build_system_prompt(self, agent_role: str = "writer_agent") -> str:
+        """
+        构建带有“思想钢印”的系统提示词。
+        整合：角色定义 + 全局法则 + 状态机同步协议[cite: 1]。
+        """
+        role_config = self.agent_templates.get(agent_role, {})
+        constraints = "\n".join([f"- {c}" for c in role_config.get("constraints", [])])
+        
+        return f"""
+# ROLE_IDENTITY
+你是 {role_config.get('role', 'Engine-CoPilot')}。你的存在是为了执行高精度的叙事推演。
+
+# GLOBAL_WORLD_LAWS
+{self.global_constants}
+
+# SYSTEM_OPERATIONAL_PROTOCOL
+{self.system_protocol}
+
+# SPECIFIC_CONSTRAINTS
+{constraints}
+{role_config.get('format_instruction', '')}
+        """.strip()
+
+    def build_user_prompt(
+        self, 
+        chapter_index: int, 
+        current_state: Dict[str, Any], 
+        plot_instruction: Dict[str, Any],
+        prev_summary: str, 
+        prev_hook: str,
+        retrieved_memories: List[str]
+    ) -> str:
+        """
+        动态编译用户提示词，实现“按需加载”知识。
+        """
+        # 1. 自动根据当前状态召回百科知识[cite: 1]
+        state_str = json.dumps(current_state, ensure_ascii=False)
+        relevant_entries = []
+        for key, content in self.encyclopedia.items():
+            # 如果当前位置或涉及角色在百科中，则注入
+            if key in state_str or key in json.dumps(plot_instruction):
+                relevant_entries.append(f"<{key}>\n{content}\n</{key}>")
+
+        # 2. 组装任务包
+        return f"""
+<Task_Context>
+当前进度：第 {chapter_index} 章
+剧情指令：{json.dumps(plot_instruction, ensure_ascii=False)}
+</Task_Context>
+
+<Relevant_Encyclopedia>
+{chr(10).join(relevant_entries) if relevant_entries else "无特定关联设定。"}
+</Relevant_Encyclopedia>
+
+<Long_Term_Memories>
+{chr(10).join(retrieved_memories)}
+</Long_Term_Memories>
+
+<Current_State_Snapshot>
+{state_str}
+</Current_State_Snapshot>
+
+<Preceding_Anchor>
+【前章梗概】：{prev_summary}
+【接续锚点】(正文第一句必须严密衔接此物理动作)："{prev_hook}"
+</Preceding_Anchor>
+
+请执行演算，并严格按照 JSON 协议输出本章结果。
+""".strip()

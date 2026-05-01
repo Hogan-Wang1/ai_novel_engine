@@ -1,0 +1,39 @@
+# ==============================================================================
+# AI Novel Engine - 创世控制台全局配置 (Run Context)
+# ==============================================================================
+
+# [1] 宏观元数据 (Meta Configuration)
+project_meta:
+  project_name: "Project_Neon_Rain"
+  title: "霓虹骤雨 (Neon Rain)"
+  target_word_count: 250000
+  total_volumes: 4          # 卷级大纲
+  chapters_per_volume: 25   # 每卷章节数
+  pov: "Third-Person Limited (第三人称限制视角，紧跟主角心理)"
+
+# [2] 结构化语言映射 (Linguistic Mapping) - 彻底解决中英混杂的语法灾难
+linguistic_mapping:
+  narration_language: "Chinese (中文，冷峻、干练的赛博朋克实体小说文风)"
+  dialogue_language: "English (英文，符合美式地道口语，禁止莎翁式长句，占比域限制)"
+  lore_terms_language: "English (专有名词/武器/技能名保留英文首字母大写)"
+  thought_language: "English (内心独白使用英文斜体)"
+
+# [3] 世界观边界框 (World Bounding Box) - 防止战力膨胀与逻辑崩塌的物理锁
+world_bounding_box:
+  global_tone: "Cyberpunk / Tech-Noir / Gritty"
+  power_ceiling: "街头级战力。最高破坏力不超过炸毁一辆装甲车。严禁出现无视物理法则的魔法体系。"
+  forbidden_tropes:
+    - "Deus ex machina (机械降神，绝境中突然出现未铺垫的救兵或神器)"
+    - "OOC (角色突然做出与性格档案严重不符的行为)"
+  banned_words: 
+    - "恐怖如斯"
+    - "倒吸一口凉气"
+    - "眼中闪过一丝精光"
+    - "Unbelievable"
+
+# [4] 引擎运行时参数 (Engine Core Parameters)
+engine_parameters:
+  enforcer_strictness: 0.85          # Critic 裁决者的严苛度 (0.0-1.0)，越高越死守大纲
+  max_retries_per_chapter: 3         # 触发 DeviationError 后的最大重写次数
+  temperature_narration: 0.7         # 旁白生成的发散度
+  temperature_dialogue: 0.85         # 对话生成的发散度（允许更丰富的角色情绪表达）
