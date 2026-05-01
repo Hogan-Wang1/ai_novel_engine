@@ -1,0 +1,60 @@
+[tool.poetry]
+name = "black-box-narrative-engine"
+version = "0.1.0"
+description = "全自动百万字小说生成流水线，零人工干预黑盒叙事引擎。"
+authors = ["Engine-CoPilot <copilot@narrative-engine.local>"]
+readme = "README.md"
+packages = [
+    { include = "engine" },
+    { include = "memory" },
+    { include = "clients" },
+    { include = "utils" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+# ================= 核心基础设施 =================
+# 大模型路由 API 通信接口[cite: 1]
+openai = "^1.14.0"
+anthropic = "^0.21.0"
+
+# ================= 工业级健壮性 =================
+# 强校验 JSON 解析器，用于拦截模型输出 OOC[cite: 1]
+pydantic = "^2.6.4"
+# 工业级调用器，处理并发控制与自动重试、指数退避[cite: 1]
+tenacity = "^8.2.3"
+
+# ================= 动态上下文管理 =================
+# 向量数据库接口，用于防遗忘层与状态机[cite: 1]
+chromadb = "^0.4.24"
+# (可选) 若后期上下文极长，可切换高性能的 qdrant-client
+# qdrant-client = "^1.8.0" 
+
+# ================= 辅助工具集 =================
+# 异步日志器，应对几十小时的无人值守任务[cite: 1]
+loguru = "^0.7.2"
+# 环境变量读取与静态配置文件解析[cite: 1]
+python-dotenv = "^1.0.1"
+pyyaml = "^6.0.1"
+# 异步网络请求底层库
+httpx = "^0.27.0"
+
+[tool.poetry.group.dev.dependencies]
+# 测试与 CI/CD 自动化流水线工具[cite: 1]
+pytest = "^8.1.1"
+pytest-asyncio = "^0.23.5"
+flake8 = "^7.0.0"
+black = "^24.3.0"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# 代码格式化规范，确保开源信誉与架构可读性[cite: 1]
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
