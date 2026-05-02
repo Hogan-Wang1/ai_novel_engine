@@ -1,0 +1,1053 @@
+2026-05-02 17:25:39,785 | INFO     | NovelEngine | [main.py:51] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:25:39,788 | CRITICAL | NovelEngine | [main.py:63] | 未找到 LLM_API_KEY 环境变量，系统拒绝启动。
+2026-05-02 17:25:39,788 | INFO     | NovelEngine | [main.py:93] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:35:13,264 | INFO     | NovelEngine | [main.py:53] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:35:13,266 | CRITICAL | NovelEngine | [main.py:65] | 未找到 LLM_API_KEY 环境变量，系统拒绝启动。
+2026-05-02 17:35:13,272 | INFO     | NovelEngine | [main.py:96] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:41:47,768 | INFO     | NovelEngine | [main.py:75] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:41:47,769 | INFO     | NovelEngine | [main.py:53] | 已成功加载环境变量配置文件: C:\Code\ai_novel_engine\.env
+2026-05-02 17:41:47,770 | CRITICAL | NovelEngine | [main.py:60] | ============================================================
+2026-05-02 17:41:47,770 | CRITICAL | NovelEngine | [main.py:61] | 🚨 致命错误：缺失必要的鉴权环境变量 (LLM_API_KEY)！
+2026-05-02 17:41:47,770 | CRITICAL | NovelEngine | [main.py:62] | 作为开源规范，本引擎不接受在代码中硬编码密钥。
+2026-05-02 17:41:47,770 | CRITICAL | NovelEngine | [main.py:63] | 请按照以下步骤解决：
+2026-05-02 17:41:47,770 | CRITICAL | NovelEngine | [main.py:64] | 1. 检查项目根目录是否存在 `.env` 文件。
+2026-05-02 17:41:47,770 | CRITICAL | NovelEngine | [main.py:65] | 2. 如果没有，请复制 `.env.example` 并重命名为 `.env`。
+2026-05-02 17:41:47,771 | CRITICAL | NovelEngine | [main.py:66] | 3. 在 `.env` 文件中填入: LLM_API_KEY="你的真实密钥"
+2026-05-02 17:41:47,771 | CRITICAL | NovelEngine | [main.py:67] | ============================================================
+2026-05-02 17:41:47,771 | INFO     | NovelEngine | [main.py:116] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:42:51,289 | INFO     | NovelEngine | [main.py:75] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:42:51,290 | INFO     | NovelEngine | [main.py:53] | 已成功加载环境变量配置文件: C:\Code\ai_novel_engine\.env
+2026-05-02 17:42:51,292 | INFO     | NovelEngine | [main.py:88] | 正在装配 DeepSeek 引擎内核...
+2026-05-02 17:42:51,355 | INFO     | NovelEngine | [main.py:91] | 正在部署防爆网关与自纠偏中枢 (RobustCaller & Orchestrator)...
+2026-05-02 17:42:51,357 | WARNING  | NovelEngine | [main.py:97] | 未找到大纲文件: ./data/my_outline.txt。系统将生成测试大纲以保障演示运行。
+2026-05-02 17:43:02,666 | CRITICAL | NovelEngine | [main.py:113] | 🔥 发生无法自愈的致命异常，主进程崩溃: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http_proxy.py", line 316, in handle_request
+    stream = stream.start_tls(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http11.py", line 376, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 24, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 103, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 17:43:02,682 | INFO     | NovelEngine | [main.py:116] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:47:20,586 | INFO     | NovelEngine | [main.py:90] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:47:20,587 | INFO     | NovelEngine | [main.py:68] | 已成功加载环境变量配置文件: C:\Code\ai_novel_engine\.env
+2026-05-02 17:47:20,589 | INFO     | NovelEngine | [main.py:103] | 正在装配 DeepSeek 引擎内核...
+2026-05-02 17:47:20,590 | CRITICAL | NovelEngine | [main.py:128] | 🔥 发生无法自愈的致命异常，主进程崩溃: Client.__init__() got an unexpected keyword argument 'proxies'
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 104, in main
+    primary_llm_func = create_deepseek_client(api_key)
+  File "C:\Code\ai_novel_engine\main.py", line 24, in create_deepseek_client
+    custom_http_client = httpx.Client(
+        proxies=None,
+        timeout=httpx.Timeout(connect=15.0, read=120.0, write=15.0, pool=15.0),
+        verify=False   # 警告：仅限本地开发使用，用于彻底绕过本地证书验证导致的 EOF 错误
+    )
+TypeError: Client.__init__() got an unexpected keyword argument 'proxies'
+2026-05-02 17:47:20,591 | INFO     | NovelEngine | [main.py:131] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:49:54,411 | INFO     | NovelEngine | [main.py:90] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:49:54,412 | INFO     | NovelEngine | [main.py:68] | 已成功加载环境变量配置文件: C:\Code\ai_novel_engine\.env
+2026-05-02 17:49:54,415 | INFO     | NovelEngine | [main.py:103] | 正在装配 DeepSeek 引擎内核...
+2026-05-02 17:49:54,436 | INFO     | NovelEngine | [main.py:106] | 正在部署防爆网关与自纠偏中枢 (RobustCaller & Orchestrator)...
+2026-05-02 17:50:05,958 | CRITICAL | NovelEngine | [main.py:128] | 🔥 发生无法自愈的致命异常，主进程崩溃: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http_proxy.py", line 316, in handle_request
+    stream = stream.start_tls(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http11.py", line 376, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 39, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 118, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 17:50:05,966 | INFO     | NovelEngine | [main.py:131] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:53:16,112 | INFO     | NovelEngine | [main.py:92] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:53:16,113 | INFO     | NovelEngine | [main.py:76] | 已成功加载环境变量配置文件: C:\Code\ai_novel_engine\.env
+2026-05-02 17:53:16,115 | INFO     | NovelEngine | [main.py:105] | 正在装配 DeepSeek 引擎内核 (已启用网络隔离模式)...
+2026-05-02 17:53:16,135 | INFO     | NovelEngine | [main.py:108] | 正在部署防爆网关与自纠偏中枢 (RobustCaller & Orchestrator)...
+2026-05-02 17:53:27,407 | CRITICAL | NovelEngine | [main.py:130] | 🔥 发生无法自愈的致命异常，主进程崩溃: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http_proxy.py", line 316, in handle_request
+    stream = stream.start_tls(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http11.py", line 376, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 50, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 120, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 17:53:27,415 | INFO     | NovelEngine | [main.py:133] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 17:53:51,113 | INFO     | NovelEngine | [main.py:92] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 17:53:51,113 | INFO     | NovelEngine | [main.py:76] | 已成功加载环境变量配置文件: C:\Code\ai_novel_engine\.env
+2026-05-02 17:53:51,115 | INFO     | NovelEngine | [main.py:105] | 正在装配 DeepSeek 引擎内核 (已启用网络隔离模式)...
+2026-05-02 17:53:51,134 | INFO     | NovelEngine | [main.py:108] | 正在部署防爆网关与自纠偏中枢 (RobustCaller & Orchestrator)...
+2026-05-02 17:53:59,350 | CRITICAL | NovelEngine | [main.py:130] | 🔥 发生无法自愈的致命异常，主进程崩溃: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection.py", line 101, in handle_request
+    raise exc
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection.py", line 78, in handle_request
+    stream = self._connect(request)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 11001] getaddrinfo failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 50, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 120, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 17:53:59,366 | INFO     | NovelEngine | [main.py:133] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 18:03:03,355 | INFO     | NovelEngine | [main.py:83] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 18:03:03,356 | INFO     | NovelEngine | [main.py:70] | 已成功加载本地环境变量配置: C:\Code\ai_novel_engine\.env
+2026-05-02 18:03:03,358 | INFO     | NovelEngine | [main.py:102] | 正在装配 DeepSeek 推演内核 (自适应代理模式)...
+2026-05-02 18:03:14,852 | CRITICAL | NovelEngine | [main.py:126] | 🔥 发生无法自愈的致命异常: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http_proxy.py", line 316, in handle_request
+    stream = stream.start_tls(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http11.py", line 376, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 51, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096  # 确保长章节生成的完整性
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 116, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 18:03:14,860 | INFO     | NovelEngine | [main.py:129] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 18:04:25,189 | INFO     | NovelEngine | [main.py:83] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 18:04:25,190 | INFO     | NovelEngine | [main.py:70] | 已成功加载本地环境变量配置: C:\Code\ai_novel_engine\.env
+2026-05-02 18:04:25,192 | INFO     | NovelEngine | [main.py:102] | 正在装配 DeepSeek 推演内核 (自适应代理模式)...
+2026-05-02 18:04:34,952 | CRITICAL | NovelEngine | [main.py:126] | 🔥 发生无法自愈的致命异常: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http_proxy.py", line 316, in handle_request
+    stream = stream.start_tls(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http11.py", line 376, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 51, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096  # 确保长章节生成的完整性
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 116, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 18:04:34,960 | INFO     | NovelEngine | [main.py:129] | ============== 引擎运行生命周期结束 ==============
+2026-05-02 18:10:46,537 | INFO     | NovelEngine | [main.py:88] | ============== 黑盒叙事引擎 (Engine-CoPilot) 启动 ==============
+2026-05-02 18:10:46,538 | INFO     | NovelEngine | [main.py:72] | 已成功识别并加载环境变量配置: C:\Code\ai_novel_engine\.env
+2026-05-02 18:10:46,540 | INFO     | NovelEngine | [main.py:107] | 正在装配 DeepSeek 引擎内核 (自适应代理模式)...
+2026-05-02 18:10:57,711 | CRITICAL | NovelEngine | [main.py:130] | 🔥 发生无法自愈的致命异常，进程崩溃: 主模型崩溃且未配置备用模型。
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http_proxy.py", line 316, in handle_request
+    stream = stream.start_tls(**kwargs)
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_sync\http11.py", line 376, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_backends\sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpcore\_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1019, in request
+    response = self._send_request(
+        request,
+        stream=stream or self._should_stream_response_body(request=request),
+        **kwargs,
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 400, in _send_request
+    return self._send_with_auth_retry(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_client.py", line 378, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 947, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\httpx\_transports\default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1032)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 65, in _invoke_with_fallback
+    return _call_primary()
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 331, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 470, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 371, in iter
+    result = action(retry_state)
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 413, in exc_check
+    raise retry_exc.reraise()
+          ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 184, in reraise
+    raise self.last_attempt.result()
+          ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 449, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "C:\software\minicoda\Lib\concurrent\futures\_base.py", line 401, in __get_result
+    raise self._exception
+  File "C:\software\minicoda\Lib\site-packages\tenacity\__init__.py", line 473, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 62, in _call_primary
+    return self.primary_client_func(messages)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\main.py", line 53, in call_llm
+    response = client.chat.completions.create(
+        model=model_name,
+    ...<2 lines>...
+        max_tokens=4096
+    )
+  File "C:\software\minicoda\Lib\site-packages\openai\_utils\_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "C:\software\minicoda\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1211, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<47 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\software\minicoda\Lib\site-packages\openai\_base_client.py", line 1054, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Code\ai_novel_engine\main.py", line 121, in main
+    orchestrator.initialize_world(raw_outline_path=outline_path)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Code\ai_novel_engine\engine\orchestrator.py", line 61, in initialize_world
+    blueprint = self.architect.compile_world_blueprint(raw_text)
+  File "C:\Code\ai_novel_engine\engine\generator_architect.py", line 75, in compile_world_blueprint
+    blueprint = self.caller.ask_for_structured_data(
+        system_prompt=system_prompt,
+    ...<2 lines>...
+        max_repairs=3
+    )
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 118, in ask_for_structured_data
+    raw_response = self._invoke_with_fallback(messages)
+  File "C:\Code\ai_novel_engine\clients\robust_caller.py", line 76, in _invoke_with_fallback
+    raise LLMFatalError("主模型崩溃且未配置备用模型。") from e
+clients.robust_caller.LLMFatalError: 主模型崩溃且未配置备用模型。
+2026-05-02 18:10:57,721 | INFO     | NovelEngine | [main.py:133] | ============== 引擎运行生命周期结束 ==============

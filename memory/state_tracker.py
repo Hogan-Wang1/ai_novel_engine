@@ -1,84 +1,176 @@
-import os
 import json
 import logging
-from typing import List, Dict, Any
+from pathlib import Path
+from typing import List, Dict, Optional, Literal
+from pydantic import BaseModel, Field, ValidationError
 
-logger = logging.getLogger("Engine-CoPilot.StateTracker")
+logger = logging.getLogger(__name__)
+
+# ==========================================
+# 1. 数据字典定义 (Data Models)
+# ==========================================
+
+class Item(BaseModel):
+    name: str = Field(..., description="物品名称")
+    quantity: int = Field(default=1, ge=0, description="数量，不得为负")
+    description: str = Field(..., description="一句话描述物品核心用途")
+
+class Relationship(BaseModel):
+    target_name: str = Field(..., description="交互对象名称")
+    affection: int = Field(default=0, ge=-100, le=100, description="好感度(-100到100)")
+    status: Literal["alive", "dead", "missing", "unknown"] = Field(default="alive")
+
+class CharacterState(BaseModel):
+    name: str
+    current_location: str = Field(..., description="角色当前精确位置")
+    power_level: str = Field(..., description="当前境界/战力等级")
+    health_status: Literal["healthy", "injured", "dying", "dead"] = Field(default="healthy")
+    inventory: List[Item] = Field(default_factory=list)
+    relationships: Dict[str, Relationship] = Field(default_factory=dict)
+
+class GlobalState(BaseModel):
+    current_chapter_num: int = Field(default=0)
+    world_timeline: str = Field(default="故事刚刚开始", description="当前世界的核心局势描述")
+    protagonist: CharacterState
+    key_npcs: Dict[str, CharacterState] = Field(default_factory=dict)
+    recent_summaries: List[str] = Field(default_factory=list, description="滑动窗口：最近10章的硬摘要")
+
+# ==========================================
+# 2. 状态补丁定义 (用于接收大模型的更新指令)
+# ==========================================
+
+class StatePatch(BaseModel):
+    """大模型在每章结尾必须输出的 JSON 格式"""
+    new_location: Optional[str] = None
+    health_change: Optional[Literal["healthy", "injured", "dying", "dead"]] = None
+    items_acquired: List[Item] = Field(default_factory=list)
+    items_lost: List[str] = Field(default_factory=list, description="丢失或消耗的物品名称")
+    relationship_updates: List[Relationship] = Field(default_factory=list)
+    chapter_summary: str = Field(..., description="本章的硬核摘要，限100字内，用于加入滑动窗口")
+    timeline_update: Optional[str] = Field(None, description="如果世界局势发生重大变化，在此更新")
+
+# ==========================================
+# 3. 状态管理器引擎 (State Tracker)
+# ==========================================
 
 class StateTracker:
-    """
-    RPG 级热记忆状态追踪器。
-    负责维护角色的绝对物理状态、战力境界和核心装备，防止大模型发生“复活”或“战力膨胀”幻觉。
-    """
     def __init__(self, workspace_dir: str):
-        self.state_file = os.path.join(workspace_dir, "entities_state.json")
-        # state 的数据结构约定: {"林风": {"status": "重伤", "power_level": "筑基", "inventory": ["神秘铁剑"]}}
-        self.state: Dict[str, Dict[str, Any]] = self._load_state()
-        logger.info("🛡️ 热记忆状态追踪器挂载成功。")
+        self.workspace = Path(workspace_dir)
+        self.workspace.mkdir(parents=True, exist_ok=True)
+        self.state_file = self.workspace / "story_state.json"
+        self.backup_file = self.workspace / "story_state.json.bak"
+        self.state: Optional[GlobalState] = None
+        self._load_state()
 
-    def _load_state(self) -> Dict[str, Dict[str, Any]]:
-        """从本地断点加载状态，确保断电重启后角色状态不丢失"""
-        if os.path.exists(self.state_file):
+    def _load_state(self):
+        """带容错机制的状态加载"""
+        if self.state_file.exists():
             try:
-                with open(self.state_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.error(f"❌ 状态文件损坏，将初始化为空状态: {str(e)}")
-        return {}
+                data = json.loads(self.state_file.read_text(encoding='utf-8'))
+                self.state = GlobalState(**data)
+                logger.info(f"成功加载状态，当前进度：第 {self.state.current_chapter_num} 章")
+                return
+            except (json.JSONDecodeError, ValidationError) as e:
+                logger.error(f"主状态文件损坏，尝试读取备份: {e}")
+                if self.backup_file.exists():
+                    data = json.loads(self.backup_file.read_text(encoding='utf-8'))
+                    self.state = GlobalState(**data)
+                    logger.info("已从备份文件恢复状态。")
+                    return
+                else:
+                    raise RuntimeError("状态文件与备份文件均损坏，系统无法继续。")
+        
+        # 初始化空状态 (需由外部传入大纲数据进行初步填充)
+        logger.warning("未找到状态文件，等待初始化。")
+
+    def initialize_state(self, initial_state: GlobalState):
+        """首次运行时的状态注入"""
+        self.state = initial_state
+        self._save_state()
 
     def _save_state(self):
-        """将当前内存状态落盘为强类型的 JSON"""
-        try:
-            with open(self.state_file, "w", encoding="utf-8") as f:
-                json.dump(self.state, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"❌ 无法持久化角色状态: {str(e)}")
-
-    def get_entities_snapshot(self, entity_names: List[str]) -> str:
-        """
-        向生成器 (Generator) 提供指定角色的实时状态面板。
-        这是 ContextAssembler 的核心数据源。
-        """
-        if not self.state or not entity_names:
-            return "当前无活动角色的特殊状态记录 (处于默认健康状态)。"
-
-        snapshot = []
-        for name in entity_names:
-            if name in self.state:
-                state_str = json.dumps(self.state[name], ensure_ascii=False)
-                snapshot.append(f"【{name} 当前状态】: {state_str}")
-
-        if not snapshot:
-            return "提及的角色目前处于默认健康状态，无特殊 Debuff 或关键道具约束。"
-        
-        return "\n".join(snapshot)
-
-    def get_current_snapshot_str(self) -> str:
-        """
-        向裁决者 (Critic/Enforcer) 提供全量状态，用于审查大模型是否发生 OOC 或设定崩塌。
-        """
+        """原子写入与备份机制，防崩溃"""
         if not self.state:
-            return "全局状态：未记录任何角色异常。"
-        return json.dumps(self.state, ensure_ascii=False, indent=2)
-
-    def update_entities_from_text(self, chapter_text: str):
-        """
-        【架构预留接口】
-        在完整的百万字流水线中，此函数会被 Orchestrator 呼叫。
-        它应该调用 LLM (携带 RPG 数据库管理员 Prompt)，分析 chapter_text 中的受伤/死亡/获得物品事件，
-        生成 JSON Diff 并通过 apply_state_diff 写入内存。
-        目前作为桩函数 (Stub)，保证启动拓扑不报错。
-        """
-        # 预留给未来的 LLM 状态抽取器
-        # logger.debug("正在扫描本章状态变更...")
-        pass
+            return
         
-    def apply_state_diff(self, state_diff: Dict[str, Dict[str, Any]]):
-        """接收结构化的状态更新并落盘"""
-        for entity, updates in state_diff.items():
-            if entity not in self.state:
-                self.state[entity] = {}
-            # 增量更新角色属性
-            self.state[entity].update(updates)
+        # 1. 保存当前有效状态到备份文件
+        if self.state_file.exists():
+            self.backup_file.write_text(self.state_file.read_text(encoding='utf-8'), encoding='utf-8')
+            
+        # 2. 写入新状态
+        json_str = self.state.model_dump_json(indent=2)
+        
+        # 使用临时文件写入，成功后再重命名，避免写入一半断电
+        temp_file = self.workspace / "story_state.tmp"
+        temp_file.write_text(json_str, encoding='utf-8')
+        temp_file.replace(self.state_file)
+        
+    def apply_patch(self, patch_json_str: str) -> bool:
+        """
+        核心逻辑：解析大模型输出的补丁，并更新状态
+        返回 True 表示更新成功，返回 False 表示补丁不合法，需要触发回滚或重试
+        """
+        try:
+            # 1. 验证 JSON 补丁合法性
+            patch_dict = json.loads(patch_json_str)
+            patch = StatePatch(**patch_dict)
+        except (json.JSONDecodeError, ValidationError) as e:
+            logger.error(f"大模型输出的状态补丁格式错误: {e}")
+            return False
+
+        # 2. 应用主角状态更新
+        if patch.new_location:
+            self.state.protagonist.current_location = patch.new_location
+        if patch.health_change:
+            self.state.protagonist.health_status = patch.health_change
+            
+        # 3. 物品增删逻辑 (严防凭空消耗)
+        self.state.protagonist.inventory.extend(patch.items_acquired)
+        
+        current_item_names = [item.name for item in self.state.protagonist.inventory]
+        for lost_item in patch.items_lost:
+            if lost_item in current_item_names:
+                # 简单实现：按名称剔除第一个匹配项。复杂情况可引入数量扣减逻辑
+                idx = current_item_names.index(lost_item)
+                self.state.protagonist.inventory.pop(idx)
+                current_item_names.pop(idx)
+            else:
+                logger.warning(f"逻辑预警：尝试消耗不存在的物品 [{lost_item}]，已忽略。")
+
+        # 4. 人物关系更新
+        for rel in patch.relationship_updates:
+            self.state.protagonist.relationships[rel.target_name] = rel
+
+        # 5. 滑动窗口与世界观更新
+        if patch.timeline_update:
+            self.state.world_timeline = patch.timeline_update
+            
+        self.state.recent_summaries.append(patch.chapter_summary)
+        if len(self.state.recent_summaries) > 10:
+            self.state.recent_summaries.pop(0) # 维持最近 10 章的硬摘要
+
+        self.state.current_chapter_num += 1
+        
+        # 6. 持久化
         self._save_state()
-        logger.debug("🔄 角色热记忆状态已更新并持久化。")
+        logger.info(f"状态已更新至第 {self.state.current_chapter_num} 章。")
+        return True
+
+    def get_context_for_prompt(self) -> str:
+        """提取紧凑的 JSON 字符串，供拼装下一章的 Prompt 使用"""
+        if not self.state:
+            return "{}"
+        
+        # 在组装 Prompt 时，不需要暴露太多的内部结构，提取精简版本
+        context_dict = {
+            "current_chapter": self.state.current_chapter_num + 1,
+            "protagonist_status": {
+                "location": self.state.protagonist.current_location,
+                "power_level": self.state.protagonist.power_level,
+                "health": self.state.protagonist.health_status,
+                "inventory": [item.name for item in self.state.protagonist.inventory]
+            },
+            "recent_events": self.state.recent_summaries[-3:], # 只喂给大模型最近3章摘要防止污染
+            "world_timeline": self.state.world_timeline
+        }
+        return json.dumps(context_dict, ensure_ascii=False, indent=2)

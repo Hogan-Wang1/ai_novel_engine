@@ -1,120 +1,85 @@
-import json
 import logging
-from typing import List, Dict, Any
-from pydantic import BaseModel, Field, ValidationError
-
-# 引入基础组件
+from typing import List, Dict, Optional
+from pydantic import BaseModel, Field
 from clients.robust_caller import RobustCaller
+from memory.state_tracker import GlobalState, CharacterState, Item, Relationship
 
-logger = logging.getLogger("Engine-CoPilot.OutlineArchitect")
+logger = logging.getLogger(__name__)
 
-class ChapterNode(BaseModel):
-    """Pydantic 强校验：大纲节点必须包含的具体元素"""
-    chapter_index: int = Field(..., description="本卷中的章节序号，从1开始")
-    title: str = Field(..., description="章节标题")
-    main_conflict: str = Field(..., description="本章的核心矛盾或目标")
-    foreshadowing: str = Field(..., description="本章埋下的伏笔或需要回收的前文线索")
-    involved_characters: List[str] = Field(..., description="本章出场的核心角色列表")
-    location: str = Field(..., description="本章发生的主要地点")
+# ==========================================
+# 创世数据结构 (Genesis Blueprints)
+# ==========================================
 
-class VolumeOutline(BaseModel):
-    """卷级大纲结构"""
-    volume_title: str = Field(..., description="本卷卷名")
-    chapters: List[ChapterNode] = Field(..., description="本卷包含的所有章节详细大纲")
+class PlotMilestone(BaseModel):
+    milestone_id: str = Field(..., description="节点ID，格式必须如 ARC1_M1")
+    description: str = Field(..., description="必须发生的关键剧情节点，限50字以内")
+    is_completed: bool = Field(default=False)
 
-class OutlineArchitect:
-    def __init__(self, llm_client: RobustCaller, config_data: Dict[str, Any]):
-        self.llm = llm_client
-        self.config = config_data
+class StoryArc(BaseModel):
+    arc_id: str = Field(..., description="卷ID，如 ARC_1")
+    arc_name: str = Field(..., description="卷名")
+    target_chapter_count: int = Field(..., description="本卷预计跨越的章数，如 30")
+    milestones: List[PlotMilestone] = Field(..., description="本卷必须按顺序完成的里程碑清单")
+
+class WorldLore(BaseModel):
+    power_levels: List[str] = Field(..., description="境界/战力等级的严格顺序数组，必须从最低到最高排列")
+    currency_system: str = Field(..., description="世界货币设定及兑换比例")
+    forbidden_rules: List[str] = Field(..., description="防止逻辑崩坏的绝对禁忌（如：跨越两个大境界绝对无法破防、死人绝对不可复活等）")
+
+class ArchitectBlueprint(BaseModel):
+    """Architect 最终输出的结构化建筑图纸"""
+    lore_bounds: WorldLore
+    arcs: List[StoryArc]
+    initial_state: GlobalState  # 直接对齐 StateTracker 的状态约束
+
+# ==========================================
+# 核心生成器类
+# ==========================================
+
+class GeneratorArchitect:
+    """
+    世界观与大纲架构师：负责将人类的软文本大纲“编译”为硬约束 JSON 图纸。
+    仅在项目初始化（冷启动）时被调用一次。
+    """
+    def __init__(self, robust_caller: RobustCaller):
+        self.caller = robust_caller
+
+    def _get_architect_prompt(self) -> str:
+        """重火力系统提示词，确立架构师的冰冷逻辑"""
+        return """
+        你是一个冷酷、严谨、没有感情的顶级小说世界观架构师兼底层逻辑引擎。
+        你的唯一任务是将人类提供的模糊小说草案，拆解、编译为一套极其严密的 JSON 约束逻辑。
         
-    def generate_volume_outline(self, volume_number: int) -> List[Dict[str, Any]]:
+        【最高指令与逻辑锁】
+        1. 战力阶梯约束 (power_levels)：必须是一个严格的字符串数组。绝对禁止模糊不清的等级。
+        2. 初始面板极简原则 (initial_state)：必须为主角提取一个绝对“干净”的初始面板。只允许拥有大纲开局时明确说明的物品和境界，绝不允许提前把后期的金手指或装备写入初始 inventory。
+        3. 物理法则锁 (forbidden_rules)：提取 3-5 条底层法则，这些法则是后续防止 AI 写作“战力膨胀”和“机械降神”的标尺。必须写得极其绝对。
+        4. 里程碑驱动 (arcs)：将整个大纲合理切割为若干卷 (StoryArc)。每卷必须设定 3-5 个具体的、可被验证的里程碑 (PlotMilestone)。
+        
+        你输出的 JSON 决定了整个引擎在接下来 30 万字运行中的生死，绝不可有任何结构偏差。
         """
-        卷级大纲生成器：利用黑盒逻辑推演，一次性生成一卷的高致密大纲。
+
+    def compile_world_blueprint(self, raw_outline: str) -> ArchitectBlueprint:
         """
-        meta = self.config.get("project_meta", {})
-        chapters_per_volume = meta.get("chapters_per_volume", 20)
+        执行编译动作
+        :param raw_outline: 人类作者提供的原始大纲文本
+        :return: 经过严格校验的 ArchitectBlueprint 数据对象
+        """
+        logger.info("GeneratorArchitect 启动：开始执行创世编译...")
         
-        logger.info(f"🏗️ 正在构筑第 {volume_number} 卷大纲，目标章节数: {chapters_per_volume}章...")
-        
-        system_prompt = self._build_architect_system_prompt()
-        user_prompt = self._build_architect_user_prompt(volume_number, chapters_per_volume, meta)
+        system_prompt = self._get_architect_prompt()
+        user_prompt = f"【人类作者原始大纲】\n{raw_outline}\n\n请严格按照要求执行编译，输出 ArchitectBlueprint JSON。"
 
-        # 容错重试机制：大纲是全书基石，允许更多重试次数
-        max_retries = 3
-        for attempt in range(1, max_retries + 1):
-            try:
-                raw_response = self.llm.call(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.7, # 大纲需要一定的创造力和发散性
-                    response_format={"type": "json_object"}
-                )
-                
-                # 清洗 Markdown 标记并解析 JSON
-                cleaned_json = self._clean_json(raw_response)
-                parsed_data = json.loads(cleaned_json)
-                
-                # 使用 Pydantic 进行严苛的结构验证
-                validated_outline = VolumeOutline(**parsed_data)
-                
-                logger.info(f"✅ 第 {volume_number} 卷大纲生成成功！共 {len(validated_outline.chapters)} 章。")
-                
-                # 转换为标准字典列表供 Orchestrator 使用
-                return [chapter.model_dump() for chapter in validated_outline.chapters]
-
-            except (json.JSONDecodeError, ValidationError) as e:
-                logger.warning(f"⚠️ 大纲格式解析失败 (Attempt {attempt}/{max_retries}): {str(e)[:200]}")
-            except Exception as e:
-                logger.error(f"❌ 大纲架构师内部异常 (Attempt {attempt}/{max_retries}): {str(e)}")
-        
-        logger.critical(f"🛑 第 {volume_number} 卷大纲生成彻底失败，超出最大重试次数。")
-        return []
-
-    def _build_architect_system_prompt(self) -> str:
-        box = self.config.get("world_bounding_box", {})
-        return f"""You are a master-level Narrative Architect. Your task is to design a highly cohesive, logical volume outline for a novel.
-You MUST output strictly in JSON format corresponding to the requested structure.
-
-[WORLD BOUNDING BOX]
-Tone: {box.get('global_tone')}
-Power Ceiling: {box.get('power_ceiling')}
-Forbidden Tropes: {', '.join(box.get('forbidden_tropes', []))}
-
-Ensure the pacing follows the 'Save the Cat' beat sheet methodology: setup, rising action, climax, and resolution within this volume."""
-
-    def _build_architect_user_prompt(self, vol_num: int, target_chapters: int, meta: dict) -> str:
-        return f"""
-Project: {meta.get('title')}
-Target Volume: Volume {vol_num}
-Total Chapters Required in this Volume: {target_chapters}
-
-Design the outline for Volume {vol_num}. Each chapter must cleanly transition into the next. 
-Ensure character motivations are clear and conflict steadily escalates.
-
-Required JSON Structure:
-{{
-  "volume_title": "<String>",
-  "chapters": [
-    {{
-      "chapter_index": <Int>,
-      "title": "<String>",
-      "main_conflict": "<String>",
-      "foreshadowing": "<String>",
-      "involved_characters": ["<Char1>", "<Char2>"],
-      "location": "<String>"
-    }}
-  ]
-}}
-"""
-
-    def _clean_json(self, text: str) -> str:
-        text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        return text.strip()
+        try:
+            # 依赖防爆网关，强制获取合法结构
+            blueprint = self.caller.ask_for_structured_data(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                response_model=ArchitectBlueprint,
+                max_repairs=3
+            )
+            logger.info(f"世界观蓝图编译成功！共划定 {len(blueprint.arcs)} 卷，确立了 {len(blueprint.lore_bounds.power_levels)} 个战力阶层。")
+            return blueprint
+        except Exception as e:
+            logger.critical(f"创世编译失败，蓝图解析崩溃: {e}")
+            raise
