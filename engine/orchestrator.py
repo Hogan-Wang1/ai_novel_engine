@@ -1,116 +1,150 @@
+import os
 import json
 import logging
-from typing import Dict, List, Optional
-from pydantic import BaseModel, Field, ValidationError
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import time
+from typing import Dict, Any, List
 
-# 假设复用您现有项目库中的工具包
-# from clients.robust_caller import LLMClient
-# from memory.state_tracker import StateTracker
-# from memory.vector_db_client import VectorDB
+# 导入核心组件 (假设均已实现)
+from engine.context_assembler import ContextAssembler
+from engine.generator_chapter import ChapterGenerator
+from engine.plot_evolver import PlotEnforcer # 此处对应之前定义的裁决者
+from memory.state_tracker import StateTracker
+from memory.recap_manager import RecapManager
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("Engine-Orchestrator")
+logger = logging.getLogger("Engine-CoPilot.Orchestrator")
 
-# 1. 严格定义输出数据结构 (JSON Schema 锁)
-class ChapterOutput(BaseModel):
-    thought_process: str = Field(..., description="引擎内部思考：剧情连贯性检查、角色动机推演、战力平衡验证")
-    state_updates: Dict[str, str] = Field(..., description="对当前世界观、人物状态、持有物品的更新指令")
-    summary: str = Field(..., description="本章的精准摘要（用于下一章的上下文拼接）")
-    end_hook: str = Field(..., description="本章结尾的平滑过渡锚点（如角色动作、未完对话、场景转移）")
-    content: str = Field(..., description="小说的正文内容，至少3000字，不包含任何元信息")
-
-class HallucinationError(Exception):
-    """自定义幻觉检测异常"""
-    pass
-
-class ChapterGenerator:
-    def __init__(self, llm_client, state_tracker, vector_db):
-        self.llm = llm_client
-        self.state = state_tracker      # 维护角色卡、时间线、战力体系
-        self.db = vector_db             # 维护历史章节向量
-        self.system_prompt = self._load_system_prompt()
-
-    def _load_system_prompt(self) -> str:
-        # 加载强约束的系统提示词，详见第二部分
-        with open("config/prompts_template/system_prompts.yaml.example", "r", encoding="utf-8") as f: #
-            return f.read()
-
-    @retry(
-        stop=stop_after_attempt(5),
-        wait=wait_exponential(multiplier=2, min=4, max=60),
-        retry=retry_if_exception_type((ValidationError, HallucinationError, json.JSONDecodeError)),
-        reraise=True
-    )
-    def generate_chapter(self, chapter_index: int, previous_summary: str, previous_hook: str) -> ChapterOutput:
-        logger.info(f"🚀 开始生成第 {chapter_index} 章...")
+class NovelOrchestrator:
+    def __init__(
+        self, 
+        config_path: str,
+        assembler: ContextAssembler,
+        generator: ChapterGenerator,
+        enforcer: PlotEnforcer,
+        state_tracker: StateTracker,
+        recap_manager: RecapManager,
+        output_dir: str = "./output/workspaces"
+    ):
+        self.assembler = assembler
+        self.generator = generator
+        self.enforcer = enforcer
+        self.state_tracker = state_tracker
+        self.recap_manager = recap_manager
         
-        # 1. 组装动态上下文 (Algorithm Context Stitching)
-        current_world_state = self.state.get_current_snapshot()
-        retrieved_lore = self.db.query(previous_summary, top_k=3) 
+        # 基础配置
+        self.config = self.assembler.config
+        self.max_retries = self.config.get("engine_parameters", {}).get("max_retries_per_chapter", 3)
+        self.output_dir = output_dir
+        self.checkpoint_file = os.path.join(self.output_dir, "checkpoint.json")
         
-        prompt = self._build_generation_prompt(
-            chapter_index, previous_summary, previous_hook, current_world_state, retrieved_lore
-        )
+        os.makedirs(self.output_dir, exist_ok=True)
 
-        # 2. 调用 LLM 并要求强制输出 JSON
-        raw_response = self.llm.generate(
-            system_prompt=self.system_prompt,
-            user_prompt=prompt,
-            response_format={"type": "json_object"} # 强制 JSON 模式
-        )
-
-        try:
-            # 3. 校验并反序列化输出
-            output_data = json.loads(raw_response)
-            chapter_data = ChapterOutput(**output_data)
-            
-            # 4. 前置黑盒逻辑校验 (战力膨胀拦截等)
-            self._validate_logic_locks(chapter_data.state_updates, current_world_state)
-            
-            return chapter_data
-            
-        except ValidationError as e:
-            logger.error(f"❌ JSON结构校验失败，触发重试: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"❌ 生成解析异常: {e}")
-            raise
-
-    def _build_generation_prompt(self, index: int, summary: str, hook: str, state: dict, lore: list) -> str:
-        return f"""
-        【当前任务】生成第 {index} 章
-        【上一章梗概】{summary}
-        【上一章结尾锚点】(必须无缝衔接此动作或场景)：{hook}
-        【全局状态机参数】{json.dumps(state, ensure_ascii=False)}
-        【相关历史记忆】{lore}
-        
-        请严格遵循 System Prompt 的约束，输出指定的 JSON 格式。
-        """
-
-    def _validate_logic_locks(self, updates: Dict, current_state: Dict):
-        # 实现自定义的战力检测、生死状态检测逻辑
-        # 如果检测到死亡角色复活或越级秒杀，抛出 HallucinationError 强制重试
-        pass
-
-    def run_pipeline(self, target_chapters: int):
-        prev_summary = "故事的起点..."
-        prev_hook = "主角推开了那扇沉重的大门。"
-        
-        for i in range(1, target_chapters + 1):
+    def _load_checkpoint(self) -> int:
+        """读取断点，返回下一个需要生成的章节索引"""
+        if os.path.exists(self.checkpoint_file):
             try:
-                chapter = self.generate_chapter(i, prev_summary, prev_hook)
-                
-                # 持久化存储
-                self._save_to_disk(i, chapter.content)
-                self.db.insert(chapter.content, metadata={"chapter": i})
-                self.state.apply_updates(chapter.state_updates)
-                
-                # 状态轮转，为下一章做准备 (Zero-intervention smoothing)
-                prev_summary = chapter.summary
-                prev_hook = chapter.end_hook
-                logger.info(f"✅ 第 {i} 章生成并保存成功。")
-                
+                with open(self.checkpoint_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    last_chapter = data.get("last_successful_chapter", 0)
+                    logger.info(f"💾 发现断点记录，将从第 {last_chapter + 1} 章恢复生成。")
+                    return last_chapter + 1
             except Exception as e:
-                logger.critical(f"🛑 流水线致命崩溃于第 {i} 章: {e}")
-                break
+                logger.warning(f"⚠️ 断点文件损坏，将从头开始: {str(e)}")
+        return 1
+
+    def _save_checkpoint(self, chapter_index: int):
+        """持久化当前进度"""
+        with open(self.checkpoint_file, "w", encoding="utf-8") as f:
+            json.dump({"last_successful_chapter": chapter_index, "timestamp": time.time()}, f)
+
+    def run_pipeline(self, full_outline: List[Dict[str, Any]]):
+        """
+        主引擎心跳：启动无人值守的流水线
+        """
+        start_chapter = self._load_checkpoint()
+        total_chapters = len(full_outline)
+
+        logger.info(f"🚀 [主引擎点火] 目标进度: {start_chapter}/{total_chapters}")
+
+        for current_idx in range(start_chapter, total_chapters + 1):
+            outline_node = full_outline[current_idx - 1] # 索引对齐
+            
+            # 获取物理锚点（上一章结尾）
+            prev_tail = self.recap_manager.get_previous_tail(current_idx)
+            
+            # 组装本章上下文
+            context = self.assembler.build_generation_context(current_idx, outline_node, prev_tail)
+            
+            success = False
+            critic_feedback = None # 用于承载打回重写的指令
+
+            # --- 对抗式生成循环 (Adversarial Loop) ---
+            for attempt in range(1, self.max_retries + 1):
+                logger.info(f"🔄 正在生成第 {current_idx} 章 (尝试 {attempt}/{self.max_retries})...")
+                
+                # 如果有之前打回的意见，强行注入到 context 的 user_prompt 顶部
+                current_context = context.copy()
+                if critic_feedback:
+                    warning_prefix = f"【CRITICAL REWRITE INSTRUCTION】上一版被裁决者驳回，你必须遵循以下修改指令：\n{critic_feedback}\n\n"
+                    current_context["user_prompt"] = warning_prefix + current_context["user_prompt"]
+
+                # 1. 生成正文
+                generated_data = self.generator.generate_chapter(
+                    system_prompt=current_context["system_prompt"],
+                    user_prompt=current_context["user_prompt"]
+                )
+                
+                if not generated_data:
+                    logger.error("❌ 生成器返回空数据，触发重试。")
+                    continue
+
+                chapter_text = generated_data.get("chapter_content", "")
+                
+                # 2. 四维矩阵裁决
+                eval_result = self.enforcer.evaluate_chapter(
+                    outline=json.dumps(outline_node, ensure_ascii=False),
+                    state_snapshot=self.state_tracker.get_current_snapshot_str(),
+                    world_box=json.dumps(self.config.get("world_bounding_box"), ensure_ascii=False),
+                    generated_text=chapter_text
+                )
+
+                if eval_result.final_decision == "PASS":
+                    logger.info(f"✅ 第 {current_idx} 章裁决通过！准备落盘。")
+                    
+                    # 3. 内存与状态流转 (State Update)
+                    self._commit_chapter(current_idx, generated_data)
+                    success = True
+                    break # 跳出重试循环，进入下一章
+                else:
+                    critic_feedback = eval_result.rewrite_instructions
+                    logger.warning(f"⚠️ 第 {current_idx} 章被打回！正在将修改指令反馈给生成器...")
+                    time.sleep(2) # API 避退
+
+            # --- 熔断保护 ---
+            if not success:
+                logger.critical(f"🛑 致命错误：第 {current_idx} 章在 {self.max_retries} 次重试后彻底失败。流水线熔断。")
+                logger.critical("请人工介入检查大纲是否过于矛盾，或调低 Critic 的严苛度。")
+                break # 彻底终止流水线
+
+        if start_chapter > total_chapters:
+            logger.info("🎉 全书生成完毕！引擎平稳停机。")
+
+    def _commit_chapter(self, chapter_index: int, generated_data: Dict[str, Any]):
+        """执行落盘与记忆更新操作"""
+        # 1. 写入本地 TXT 文件供用户阅读
+        chapter_title = f"第 {chapter_index} 章" # 简化处理，实际应从大纲取
+        file_path = os.path.join(self.output_dir, f"Chapter_{chapter_index:03d}.txt")
+        
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(f"## {chapter_title}\n\n")
+            f.write(generated_data.get("chapter_content", ""))
+        
+        # 2. 更新双轨记忆系统 (由各个 Manager 内部处理 LLM 调用)
+        # 提取上一章末尾 500 字存入 Recap
+        self.recap_manager.update_tail(chapter_index, generated_data.get("end_anchor", ""))
+        # 提取事件摘要存入 VectorDB
+        self.recap_manager.extract_and_store_summary(chapter_index, generated_data.get("chapter_content", ""))
+        # 更新角色状态卡
+        self.state_tracker.update_entities_from_text(generated_data.get("chapter_content", ""))
+
+        # 3. 记录断点
+        self._save_checkpoint(chapter_index)
