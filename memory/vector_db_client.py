@@ -1,63 +1,77 @@
-import chromadb
-from chromadb.config import Settings
-from typing import List, Dict, Any, Optional
 import logging
+from typing import List, Dict, Any, Optional
 
-logger = logging.getLogger("Engine-VectorDB")
+try:
+    import chromadb
+except ImportError:
+    chromadb = None
+
+logger = logging.getLogger("Engine-CoPilot.VectorDB")
 
 class VectorDBClient:
-    def __init__(self, db_path: str = ".chroma_db"): #[cite: 1]
-        self.client = chromadb.PersistentClient(path=db_path)
-        # 分层索引：1. 里程碑（改变剧情走向的大事） 2. 细节片段（环境、对话）
-        self.milestone_col = self.client.get_or_create_collection("milestones")
-        self.fragment_col = self.client.get_or_create_collection("fragments")
+    """
+    冷记忆向量数据库终端。
+    专用于存储和检索前情提要、历史伏笔与环境设定。
+    """
+    def __init__(self, db_path: str = "./.chroma_db", collection_name: str = "novel_cold_memory"):
+        if chromadb is None:
+            logger.critical("🛑 缺少冷记忆核心组件！请立即在终端运行: pip install chromadb")
+            raise ImportError("Missing required package: chromadb")
 
-    def upsert_memory(self, chapter_index: int, content: str, summary: str, is_milestone: bool = False):
-        """
-        持久化存储记忆。
-        如果是里程碑，则双重存储以提高召回权重。
-        """
-        doc_id = f"ch_{chapter_index}"
-        metadata = {"chapter": chapter_index, "type": "milestone" if is_milestone else "fragment"}
+        self.db_path = db_path
         
-        if is_milestone:
-            # 里程碑存储摘要，便于宏观逻辑检索
-            self.milestone_col.add(
-                ids=[doc_id],
-                documents=[summary],
-                metadatas=[metadata]
+        try:
+            # 采用 PersistentClient 实现本地持久化，断电重启记忆不丢失
+            self.client = chromadb.PersistentClient(path=self.db_path)
+            
+            # 获取或创建集合，使用余弦相似度进行文本匹配
+            self.collection = self.client.get_or_create_collection(
+                name=collection_name,
+                metadata={"hnsw:space": "cosine"} 
             )
-        
-        # 所有内容进入碎片库
-        self.fragment_col.add(
-            ids=[doc_id],
-            documents=[content[:2000]], # 限制长度防止向量偏移
-            metadatas=[metadata]
-        )
-        logger.info(f"✅ 记忆已存档: 第 {chapter_index} 章 ({'里程碑' if is_milestone else '碎片'})")
+            logger.info(f"🧠 冷记忆向量矩阵挂载成功 | 路径: {self.db_path} | 集合: {collection_name}")
+        except Exception as e:
+            logger.critical(f"🛑 向量数据库初始化彻底失败: {str(e)}")
+            raise e
 
-    def retrieve_context(self, current_query: str, top_k_milestones: int = 2, top_k_fragments: int = 3) -> List[str]:
+    def add_memory(self, memory_id: str, text: str, metadata: Optional[Dict[str, Any]] = None):
         """
-        多路召回策略：
-        1. 召回最近发生的里程碑，确保因果逻辑。
-        2. 召回与当前语义相关的细节片段。
+        将剧情摘要或重要设定写入冷记忆矩阵
         """
-        results = []
-        
-        # 1. 检索里程碑（逻辑链）
-        m_results = self.milestone_col.query(
-            query_texts=[current_query],
-            n_results=top_k_milestones
-        )
-        for doc in m_results['documents'][0]:
-            results.append(f"【关键历史锚点】：{doc}")
+        try:
+            self.collection.add(
+                documents=[text],
+                metadatas=[metadata or {}],
+                ids=[memory_id]
+            )
+            logger.debug(f"💾 冷记忆碎片已封存: [{memory_id}]")
+        except Exception as e:
+            logger.error(f"❌ 写入冷记忆失败 (ID: {memory_id}): {str(e)}")
+
+    def search_relevant_lore(self, query: str, top_k: int = 2) -> str:
+        """
+        检索与当前上下文最相关的历史记忆。
+        包含熔断降级策略：如果报错，返回友好提示而非抛出异常中断流水线。
+        """
+        if not query.strip():
+            return "无明确查询条件。"
+
+        try:
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=top_k
+            )
             
-        # 2. 检索细节碎片（相关性）
-        f_results = self.fragment_col.query(
-            query_texts=[current_query],
-            n_results=top_k_fragments
-        )
-        for doc in f_results['documents'][0]:
-            results.append(f"【相关背景细节】：{doc}")
+            # ChromaDB 的 documents 返回的是二维列表
+            if not results['documents'] or not results['documents'][0]:
+                return "未检索到相关的历史记忆。"
+                
+            retrieved_texts = results['documents'][0]
             
-        return results
+            # 将检索到的片段拼接为结构化文本
+            context_str = "\n".join([f" - {text}" for text in retrieved_texts])
+            return context_str
+            
+        except Exception as e:
+            logger.error(f"❌ 检索冷记忆时发生局部异常: {str(e)}")
+            return "记忆检索系统暂时波动，未获取到历史上下文。"

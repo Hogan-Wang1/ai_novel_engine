@@ -1,124 +1,120 @@
-import re
-import yaml
 import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import List, Dict, Any
+from pydantic import BaseModel, Field, ValidationError
 
-logger = logging.getLogger("Engine-PromptArchitect")
+# 引入基础组件
+from clients.robust_caller import RobustCaller
 
-class PromptArchitect:
-    """
-    提示词架构师：负责将静态设定、角色协议、动态状态和历史记忆编译成最终的 LLM 指令。
-    """
-    def __init__(
-        self, 
-        super_prompt_path: str = "prompts/super_prompt.md", 
-        system_prompts_path: str = "config/prompts_template/system_prompts.yaml"
-    ):
-        self.super_prompt_raw = self._load_text(super_prompt_path)
-        self.agent_templates = self._load_yaml(system_prompts_path)
+logger = logging.getLogger("Engine-CoPilot.OutlineArchitect")
+
+class ChapterNode(BaseModel):
+    """Pydantic 强校验：大纲节点必须包含的具体元素"""
+    chapter_index: int = Field(..., description="本卷中的章节序号，从1开始")
+    title: str = Field(..., description="章节标题")
+    main_conflict: str = Field(..., description="本章的核心矛盾或目标")
+    foreshadowing: str = Field(..., description="本章埋下的伏笔或需要回收的前文线索")
+    involved_characters: List[str] = Field(..., description="本章出场的核心角色列表")
+    location: str = Field(..., description="本章发生的主要地点")
+
+class VolumeOutline(BaseModel):
+    """卷级大纲结构"""
+    volume_title: str = Field(..., description="本卷卷名")
+    chapters: List[ChapterNode] = Field(..., description="本卷包含的所有章节详细大纲")
+
+class OutlineArchitect:
+    def __init__(self, llm_client: RobustCaller, config_data: Dict[str, Any]):
+        self.llm = llm_client
+        self.config = config_data
         
-        # 预编译核心区块
-        self.global_constants = self._extract_section("GLOBAL_CONSTANTS")
-        self.system_protocol = self._extract_section("SYSTEM_PROTOCOL")
-        self.encyclopedia = self._parse_encyclopedia()
-
-    def _load_text(self, path: str) -> str:
-        p = Path(path)
-        if not p.exists():
-            logger.error(f"❌ 关键文件缺失: {path}")
-            raise FileNotFoundError(path)
-        return p.read_text(encoding="utf-8")
-
-    def _load_yaml(self, path: str) -> Dict:
-        p = Path(path)
-        actual_path = p if p.exists() else Path(f"{path}.example") # 兼容 example
-        with open(actual_path, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
-
-    def _extract_section(self, section_name: str) -> str:
-        """正则提取 [SECTION: NAME] 区块"""
-        pattern = rf"# \[SECTION: {section_name}\](.*?)(?=# \[SECTION:|$)"
-        match = re.search(pattern, self.super_prompt_raw, re.DOTALL)
-        return match.group(1).strip() if match else ""
-
-    def _parse_encyclopedia(self) -> Dict[str, str]:
-        """解析百科全书条目 [ENTRY: KEY]"""
-        encyclopedia_text = self._extract_section("ENCYCLOPEDIA")
-        entries = {}
-        pattern = r"## \[ENTRY: (.*?)\](.*?)(?=## \[ENTRY:|$)"
-        matches = re.finditer(pattern, encyclopedia_text, re.DOTALL)
-        for match in matches:
-            entries[match.group(1).strip()] = match.group(2).strip()
-        return entries
-
-    def build_system_prompt(self, agent_role: str = "writer_agent") -> str:
+    def generate_volume_outline(self, volume_number: int) -> List[Dict[str, Any]]:
         """
-        构建带有“思想钢印”的系统提示词。
-        整合：角色定义 + 全局法则 + 状态机同步协议[cite: 1]。
+        卷级大纲生成器：利用黑盒逻辑推演，一次性生成一卷的高致密大纲。
         """
-        role_config = self.agent_templates.get(agent_role, {})
-        constraints = "\n".join([f"- {c}" for c in role_config.get("constraints", [])])
+        meta = self.config.get("project_meta", {})
+        chapters_per_volume = meta.get("chapters_per_volume", 20)
         
+        logger.info(f"🏗️ 正在构筑第 {volume_number} 卷大纲，目标章节数: {chapters_per_volume}章...")
+        
+        system_prompt = self._build_architect_system_prompt()
+        user_prompt = self._build_architect_user_prompt(volume_number, chapters_per_volume, meta)
+
+        # 容错重试机制：大纲是全书基石，允许更多重试次数
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                raw_response = self.llm.call(
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7, # 大纲需要一定的创造力和发散性
+                    response_format={"type": "json_object"}
+                )
+                
+                # 清洗 Markdown 标记并解析 JSON
+                cleaned_json = self._clean_json(raw_response)
+                parsed_data = json.loads(cleaned_json)
+                
+                # 使用 Pydantic 进行严苛的结构验证
+                validated_outline = VolumeOutline(**parsed_data)
+                
+                logger.info(f"✅ 第 {volume_number} 卷大纲生成成功！共 {len(validated_outline.chapters)} 章。")
+                
+                # 转换为标准字典列表供 Orchestrator 使用
+                return [chapter.model_dump() for chapter in validated_outline.chapters]
+
+            except (json.JSONDecodeError, ValidationError) as e:
+                logger.warning(f"⚠️ 大纲格式解析失败 (Attempt {attempt}/{max_retries}): {str(e)[:200]}")
+            except Exception as e:
+                logger.error(f"❌ 大纲架构师内部异常 (Attempt {attempt}/{max_retries}): {str(e)}")
+        
+        logger.critical(f"🛑 第 {volume_number} 卷大纲生成彻底失败，超出最大重试次数。")
+        return []
+
+    def _build_architect_system_prompt(self) -> str:
+        box = self.config.get("world_bounding_box", {})
+        return f"""You are a master-level Narrative Architect. Your task is to design a highly cohesive, logical volume outline for a novel.
+You MUST output strictly in JSON format corresponding to the requested structure.
+
+[WORLD BOUNDING BOX]
+Tone: {box.get('global_tone')}
+Power Ceiling: {box.get('power_ceiling')}
+Forbidden Tropes: {', '.join(box.get('forbidden_tropes', []))}
+
+Ensure the pacing follows the 'Save the Cat' beat sheet methodology: setup, rising action, climax, and resolution within this volume."""
+
+    def _build_architect_user_prompt(self, vol_num: int, target_chapters: int, meta: dict) -> str:
         return f"""
-# ROLE_IDENTITY
-你是 {role_config.get('role', 'Engine-CoPilot')}。你的存在是为了执行高精度的叙事推演。
+Project: {meta.get('title')}
+Target Volume: Volume {vol_num}
+Total Chapters Required in this Volume: {target_chapters}
 
-# GLOBAL_WORLD_LAWS
-{self.global_constants}
+Design the outline for Volume {vol_num}. Each chapter must cleanly transition into the next. 
+Ensure character motivations are clear and conflict steadily escalates.
 
-# SYSTEM_OPERATIONAL_PROTOCOL
-{self.system_protocol}
+Required JSON Structure:
+{{
+  "volume_title": "<String>",
+  "chapters": [
+    {{
+      "chapter_index": <Int>,
+      "title": "<String>",
+      "main_conflict": "<String>",
+      "foreshadowing": "<String>",
+      "involved_characters": ["<Char1>", "<Char2>"],
+      "location": "<String>"
+    }}
+  ]
+}}
+"""
 
-# SPECIFIC_CONSTRAINTS
-{constraints}
-{role_config.get('format_instruction', '')}
-        """.strip()
-
-    def build_user_prompt(
-        self, 
-        chapter_index: int, 
-        current_state: Dict[str, Any], 
-        plot_instruction: Dict[str, Any],
-        prev_summary: str, 
-        prev_hook: str,
-        retrieved_memories: List[str]
-    ) -> str:
-        """
-        动态编译用户提示词，实现“按需加载”知识。
-        """
-        # 1. 自动根据当前状态召回百科知识[cite: 1]
-        state_str = json.dumps(current_state, ensure_ascii=False)
-        relevant_entries = []
-        for key, content in self.encyclopedia.items():
-            # 如果当前位置或涉及角色在百科中，则注入
-            if key in state_str or key in json.dumps(plot_instruction):
-                relevant_entries.append(f"<{key}>\n{content}\n</{key}>")
-
-        # 2. 组装任务包
-        return f"""
-<Task_Context>
-当前进度：第 {chapter_index} 章
-剧情指令：{json.dumps(plot_instruction, ensure_ascii=False)}
-</Task_Context>
-
-<Relevant_Encyclopedia>
-{chr(10).join(relevant_entries) if relevant_entries else "无特定关联设定。"}
-</Relevant_Encyclopedia>
-
-<Long_Term_Memories>
-{chr(10).join(retrieved_memories)}
-</Long_Term_Memories>
-
-<Current_State_Snapshot>
-{state_str}
-</Current_State_Snapshot>
-
-<Preceding_Anchor>
-【前章梗概】：{prev_summary}
-【接续锚点】(正文第一句必须严密衔接此物理动作)："{prev_hook}"
-</Preceding_Anchor>
-
-请执行演算，并严格按照 JSON 协议输出本章结果。
-""".strip()
+    def _clean_json(self, text: str) -> str:
+        text = text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        return text.strip()

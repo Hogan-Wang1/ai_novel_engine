@@ -3,89 +3,77 @@ import logging
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field, ValidationError
 
-# 假设这些是你的本地模块
-from clients.robust_caller import LLMRouter, RobustCaller
-from memory.state_tracker import StateTracker
-from memory.recap_manager import RecapManager
-from utils.text_cleaner import extract_json_from_text
+# 【依赖收束】只允许导入最高层级的 API 装甲
+from clients.robust_caller import RobustCaller
 
 logger = logging.getLogger("Engine-CoPilot.ChapterGenerator")
 
 class ChapterOutputModel(BaseModel):
-    """Pydantic 模型：用于强制校验 LLM 的输出结构，防止格式雪崩"""
-    logic_chain: str = Field(..., description="对大纲的解析和接续上一章末尾的逻辑推理")
-    character_states_check: str = Field(..., description="检查当前出场角色是否符合人设与战力限制")
-    chapter_content: str = Field(..., description="小说的正文内容，必须大于 2000 字")
-    end_anchor: str = Field(..., description="本章结尾的悬念或动作，用于下一章的无缝拼接")
+    """
+    Pydantic 模型：强制校验 LLM 输出的 JSON 结构，这是防格式雪崩的最后一道防线。
+    """
+    logic_chain: str = Field(..., description="对当前大纲的解析和接续上一章末尾的黑盒逻辑推理")
+    character_states_check: str = Field(..., description="校验主角状态（如重伤/持有特定道具）将如何影响本章")
+    chapter_content: str = Field(..., description="小说正文内容，纯文本结构")
+    end_anchor: str = Field(..., description="本章结束时的状态快照（人物位置、心理、面临的直接局势）")
 
 class ChapterGenerator:
-    def __init__(self, llm_caller: RobustCaller, state_tracker: StateTracker, recap_manager: RecapManager):
+    """
+    正文生成核心引擎。
+    负责将高信噪比的上下文转换为符合法典纪律的小说正文，自带 JSON 自愈合解析。
+    """
+    def __init__(self, llm_caller: RobustCaller):
         self.llm = llm_caller
-        self.state_tracker = state_tracker
-        self.recap_manager = recap_manager
 
-    def generate_chapter(self, chapter_index: int, outline_node: Dict[str, Any], prev_tail_text: str) -> Optional[Dict[str, Any]]:
+    def generate_chapter(self, system_prompt: str, user_prompt: str) -> Optional[Dict[str, Any]]:
         """
-        全自动生成单章内容，包含容错与断点续传思维
+        调用 API 并强制解析为安全的 ChapterOutputModel 结构
         """
-        logger.info(f"🚀 正在生成第 {chapter_index} 章: {outline_node.get('title')}")
+        # 在生成正文时，虽然 API 层有重试，但解析 JSON 也需要重试容错
+        max_parse_retries = 3 
         
-        # 1. 组装极限上下文 (Context Assembly)
-        active_characters = self.state_tracker.get_active_characters(outline_node.get("involved_characters", []))
-        world_rules = self.state_tracker.get_world_constraints()
-        recent_summary = self.recap_manager.get_recent_summary(window_size=3)
-
-        # 2. 构造重火力 Prompt
-        system_prompt = self._build_system_prompt()
-        user_prompt = self._build_user_prompt(
-            outline_node, prev_tail_text, active_characters, world_rules, recent_summary
-        )
-
-        # 3. 带自愈合逻辑的 LLM 调用 (最大重试 3 次)
-        max_retries = 3
-        for attempt in range(max_retries):
+        for attempt in range(1, max_parse_retries + 1):
             try:
-                logger.debug(f"尝试第 {attempt + 1}/{max_retries} 次请求...")
+                # 触发底层 RobustCaller (自带 429 和网络断连保护)
                 raw_response = self.llm.call(
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
                     temperature=0.85, # 保持一定的文学创造性
-                    response_format={"type": "json_object"} # 如果 API 支持
+                    response_format={"type": "json_object"} 
                 )
                 
-                # 4. 清洗与解析
-                cleaned_json_str = extract_json_from_text(raw_response)
-                parsed_data = json.loads(cleaned_json_str)
+                if not raw_response:
+                    raise ValueError("API 返回了空响应")
+
+                # 1. 粗洗去噪：剥离可能存在的 Markdown 标记
+                cleaned_json_str = self._clean_json(raw_response)
                 
-                # 5. Pydantic 强校验 (防漏字段、防数据类型错误)
+                # 2. 强校验：反序列化并进行 Pydantic 字段级验证
+                parsed_data = json.loads(cleaned_json_str)
                 validated_data = ChapterOutputModel(**parsed_data)
                 
-                logger.info(f"✅ 第 {chapter_index} 章生成成功，字数: {len(validated_data.chapter_content)}")
-                
-                # 更新记忆流
-                self.recap_manager.add_chapter_summary(chapter_index, validated_data.chapter_content)
-                self.state_tracker.update_entities_from_text(validated_data.chapter_content)
+                content_length = len(validated_data.chapter_content)
+                logger.debug(f"✅ 正文生成与结构校验成功 (字数: {content_length})")
                 
                 return validated_data.model_dump()
 
             except (json.JSONDecodeError, ValidationError) as e:
-                logger.warning(f"⚠️ 解析或校验失败 (Attempt {attempt + 1}): {str(e)}")
-                # 在重试前，将错误信息喂回给 LLM 也是一种高级策略 (Reflection)
+                logger.warning(f"⚠️ LLM 输出格式越界 (Attempt {attempt}/{max_parse_retries}) | 解析异常: {str(e)[:150]}")
             except Exception as e:
-                logger.error(f"❌ 严重系统错误 (Attempt {attempt + 1}): {str(e)}")
+                logger.error(f"❌ 正文生成器内部发生不可预期的崩溃 (Attempt {attempt}/{max_parse_retries}): {str(e)}")
         
-        logger.critical(f"🛑 第 {chapter_index} 章生成彻底失败，超出最大重试次数。")
+        logger.error("🛑 正文生成器因连续格式错误已熔断，向上层抛出 None 以触发系统级重写。")
         return None
 
-    def _build_system_prompt(self) -> str:
-        # 实际项目中应从 config/prompts_template 加载
-        return """You are a master-level novelist and black-box narrative engine. 
-Your ONLY goal is to output a perfect JSON object following the exact schema provided.
-NEVER output Markdown code blocks, greetings, or explanations outside the JSON.
-Adhere strictly to the world's power levels and character logic. Negative Prompt: No sudden personality shifts, no deus ex machina, no breaking the 4th wall."""
-
-    def _build_user_prompt(self, outline, prev_tail, chars, rules, summary) -> str:
-        # 具体实现参考下方的 Prompt 模板
-        pass
+    def _clean_json(self, text: str) -> str:
+        """剥离 LLM 喜欢自作主张加上的 ```json 和 ``` 标记"""
+        text = text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        return text.strip()

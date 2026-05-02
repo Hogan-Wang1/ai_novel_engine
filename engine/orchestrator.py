@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 # 导入核心组件 (假设均已实现)
 from engine.context_assembler import ContextAssembler
 from engine.generator_chapter import ChapterGenerator
-from engine.plot_evolver import PlotEnforcer # 此处对应之前定义的裁决者
+from engine.plot_enforcer import PlotEnforcer # 此处对应之前定义的裁决者
 from memory.state_tracker import StateTracker
 from memory.recap_manager import RecapManager
 
